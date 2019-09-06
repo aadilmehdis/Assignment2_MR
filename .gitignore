@@ -1,3 +1,4 @@
 .DS_Store
 Pipfile
 *.pyc
+.ipynb_checkpoints
