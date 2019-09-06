@@ -15,7 +15,7 @@ F_matrix = np.mat([[-1.29750186e-06,  8.07894025e-07,  1.84071967e-03],[3.540984
 # ans = getLine(F_matrix,Pts_image1[0,:])
 # print(ans.shape)
 
-x = np.linspace(0,1242)
+x = np.linspace(0,5000)
 plt.subplot(121)
 
 for i in range(Pts_image2.shape[0]):
