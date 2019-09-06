@@ -126,8 +126,12 @@ def NormalizationMat(image_coords):
 
 
 if __name__ == "__main__":
-
+    
+    f = open('results.txt','wb')
     initialMat = np.concatenate( (np.eye(3),np.zeros((3,1))), axis = 1)
+    np.savetxt(f,np.reshape(initialMat, (1,12)))
+
+    
     K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
 
     img1 = cv2.imread('../mr19-assignment2-data/images/000000.png')
@@ -153,8 +157,7 @@ if __name__ == "__main__":
 
     rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2)
     OutputMatrix = np.concatenate((rotation,translation),axis = 1)
-    f = open('results.txt','wb')
-    np.savetxt(f,np.reshape(initialMat, (1,12)))
+
     np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
     print(OutputMatrix)
     print(np.reshape(OutputMatrix,(1,12)))   
