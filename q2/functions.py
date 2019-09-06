@@ -51,11 +51,11 @@ def F_matrix(image_coords_1, image_coords_2):
     # A.shape
     # Getting the A matrix of size N*9
     for i in range(len(image_coords_1)):
-        A[i,:] = np.kron(image_coords_2[i,:], image_coords_1[i,:])
+        A[i,:] = np.kron(image_coords_1[i,:], image_coords_2[i,:])
         
     u, s, vh = np.linalg.svd(A, full_matrices=True)
     print(vh[8,:])
-    F = np.reshape(vh[8,:], (3,3)).T
+    F = np.reshape(vh[8,:], (3,3))
     print(F)
     uf, sf, vhf = np.linalg.svd(F, full_matrices=True)
     
