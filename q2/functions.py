@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import time
+from decompose_essential_matrix import *
 
 
 def correspondingFeatureDetection(img1, img2):
@@ -125,6 +126,7 @@ def NormalizationMat(image_coords):
 
 
 if __name__ == "__main__":
+    K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
 
     img1 = cv2.imread('../mr19-assignment2-data/images/000000.png')
     img2 = cv2.imread('../mr19-assignment2-data/images/000001.png')
@@ -139,7 +141,15 @@ if __name__ == "__main__":
 
     F = F_RANSAC(points1.T, points2.T, 0.005, 500)
 
-    F = T2.T @ F @ T1
+    # F = T2.T @ F @ T1
 
     for i in range(8):
         print(kp2[i,:]@T2.T@F@T1@kp1[i,:].T)
+
+    FundamentalMatrix = T2.T @ F @ T1
+    E = compute_essential_matrix(FundamentalMatrix, K)
+
+    rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2)
+
+    print(rotation,"\n", translation)    
+
