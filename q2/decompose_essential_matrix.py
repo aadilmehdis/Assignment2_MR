@@ -1,4 +1,4 @@
-def decompose_essential_matrix(E):
+def decompose_essential_matrix(E, K):
     w = np.array([
         [ 0, -1, 0],
         [ 1,  0, 0],
@@ -17,11 +17,11 @@ def decompose_essential_matrix(E):
     r1 = U @ W @ V.T
     r2 = U @ W.T @ V.T
 
-    P =  np.concatenate((np.eye(3),np.zeros(3,1)),axis=1)
-    P1 = np.concatenate((r1,t),axis=1)
-    P2 = np.concatenate((r1,-t),axis=1)
-    P3 = np.concatenate((r2,t),axis=1)
-    P4 = np.concatenate((r2,-t),axis=1)
+    P =  K @ np.concatenate((np.eye(3),np.zeros(3,1)),axis=1)
+    P1 = K @ np.concatenate((r1,t),axis=1)
+    P2 = K @ np.concatenate((r1,-t),axis=1)
+    P3 = K @ np.concatenate((r2,t),axis=1)
+    P4 = K @ np.concatenate((r2,-t),axis=1)
 
 
 def algebraic_triangulation(x1, x2, P1, P2):
