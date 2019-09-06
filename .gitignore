@@ -2,4 +2,4 @@
 Pipfile
 *.pyc
 .ipynb_checkpoints
-./mr19-assignment2-data/*
+mr19-assignment2-data/*
