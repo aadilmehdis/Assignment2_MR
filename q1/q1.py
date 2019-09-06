@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.linalg import null_space
 
 def getLine(F_matrix, Point):
     return np.matmul(F_matrix,np.c_[Point, 1].T)
@@ -37,4 +37,12 @@ for i in range(Pts_image1.shape[0]):
 
 image2 = plt.imread('img2.jpg')
 plt.imshow(image2)
+u,d,vt = np.linalg.svd(F_matrix)
+d = np.diag((d[0],d[1],0))
+F = u*d*vt
+ns = null_space(F)
+epipole1 = ns / ns[2]
+ns = null_space(F.T)
+epipole2 = ns / ns[2]
+print('Epipole 1:\n',epipole1[0:2],'\nEpipole 2:\n',epipole2[0:2])
 plt.show()    
