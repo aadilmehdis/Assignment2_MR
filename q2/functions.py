@@ -28,7 +28,7 @@ def correspondingFeatureDetection(img1, img2):
 
         (img1x, img1y) = Keypoints1[img1Idx].pt
         (img2x, img2y) = Keypoints2[img2Idx].pt
-        print([img1x,img1y,1])
+        # print([img1x,img1y,1])
         if k == 0:
             kp1_list = [[img1x,img1y,1]]
             kp2_list = [[img2x,img2y,1]]
@@ -54,14 +54,28 @@ def F_matrix(image_coords_1, image_coords_2):
         A[i,:] = np.kron(image_coords_2[i,:], image_coords_1[i,:])
         
     u, s, vh = np.linalg.svd(A, full_matrices=True)
-    
-    F = np.reshape(vh[8,:], (3,3))
-    
+    print(vh[8,:])
+    F = np.reshape(vh[8,:], (3,3)).T
+    print(F)
     uf, sf, vhf = np.linalg.svd(F, full_matrices=True)
     
     F = uf @ np.diag(np.array([sf[0], sf[1], 0])) @ vhf
 
     return F
+
+
+def NormalizationMat(image_coords):
+    # image_coords Nx3
+    mu = np.mean(image_coords,axis = 0)
+    d = 0
+    for i in range(len(image_coords)):
+        d = d + np.sqrt((image_coords[i,0] - mu[0])**2 + (image_coords[i,1] - mu[1])**2)
+
+    d = d / i
+    T = np.mat([[1.44/d, 0, -1.44*mu[0] / d], [0, 1.44 / d,-1.44*mu[1] / d],[0, 0, 1]])
+    
+    return T
+    
 
 
 if __name__ == "__main__":
@@ -71,7 +85,13 @@ if __name__ == "__main__":
     # plt.imshow(img1)
     # plt.show()
     kp1, kp2 = correspondingFeatureDetection(img1, img2)
-    print(kp1[0:8])
-    F = F_matrix(kp1[0:9,:],kp2[0:9,:])
-    print(F)
-    print(kp1[0:9,:]@F@kp2[0:9,:].T)
+    T1 = NormalizationMat(kp1[0:9,:])
+    T2 = NormalizationMat(kp2[0:9,:])
+
+    points1 = T1@kp1[0:9,:].T
+    points2 = T2@kp2[0:9,:].T
+    # print(points1.T)
+    F = F_matrix(points1.T,points2.T)
+    # print(F)
+    for i in range(8):
+        print(kp2[i,:]@T2.T@F@T1@kp1[i,:].T)
