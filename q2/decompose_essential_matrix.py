@@ -95,7 +95,7 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
         Pactual = P4
         
             
-    return rotation, translation, P, Pactual
+    return rotation, translation
 
 
 

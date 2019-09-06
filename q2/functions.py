@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import cv2
 import time
 from decompose_essential_matrix import *
+import os
 
 
 def correspondingFeatureDetection(img1, img2):
@@ -42,7 +43,7 @@ def correspondingFeatureDetection(img1, img2):
     # Draw first 10 matches.
     img3 = cv2.drawMatches(img1,Keypoints1,img2,Keypoints2,matches[:30],None, flags=2)
 
-    plt.imshow(img3),plt.show()
+    # plt.imshow(img3),plt.show()
     return kp1_list,kp2_list#Keypoints1, Descriptors1, Keypoints2, Descriptors2, matches
 
 def F_matrix(image_coords_1, image_coords_2):
@@ -126,39 +127,75 @@ def NormalizationMat(image_coords):
 
 
 if __name__ == "__main__":
+    print(cv2.decomposeEssentialMat)
     
-    f = open('results.txt','wb')
-    initialMat = np.concatenate( (np.eye(3),np.zeros((3,1))), axis = 1)
-    np.savetxt(f,np.reshape(initialMat, (1,12)))
+    # K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
 
     
-    K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
+    # f = open('results.txt','wb')
 
-    img1 = cv2.imread('../mr19-assignment2-data/images/000000.png')
-    img2 = cv2.imread('../mr19-assignment2-data/images/000001.png')
+    # cumulative_translation = np.zeros((3,1))
+    # cumulative_orientation = np.eye(3)
+    # initial_matrix = np.concatenate((cumulative_translation, cumulative_orientation), axis=1)
+    # np.savetxt(f,np.reshape(initial_matrix, (1,12)))
 
-    kp1, kp2 = correspondingFeatureDetection(img1, img2)
-    T1 = NormalizationMat(kp1[0:9,:])
-    T2 = NormalizationMat(kp2[0:9,:])
+    # dirFiles = os.listdir('../mr19-assignment2-data/images/')
+    # for i in range(len(dirFiles)):
+    #     dirFiles[i] = dirFiles[i].split(".")[0]
 
-    points1 = T1 @ kp1.T
-    points2 = T2 @ kp2.T
+    # dirFiles.sort(key=float)
+    # for i in range(len(dirFiles)):
+    #     dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
 
 
-    F = F_RANSAC(points1.T, points2.T, 0.005, 500)
+    # for i in range(1,len(dirFiles)):
+    #     print("Iteration {}".format(i))
+    #     img1 = cv2.imread(dirFiles[i-1])
+    #     img2 = cv2.imread(dirFiles[i])
 
-    # F = T2.T @ F @ T1
+    #     kp1, kp2 = correspondingFeatureDetection(img1, img2)
+    #     T1 = NormalizationMat(kp1[0:9,:])
+    #     T2 = NormalizationMat(kp2[0:9,:])
 
-    for i in range(8):
-        print(kp2[i,:]@T2.T@F@T1@kp1[i,:].T)
+    #     points1 = T1 @ kp1.T
+    #     points2 = T2 @ kp2.T
 
-    FundamentalMatrix = T2.T @ F @ T1
-    E = compute_essential_matrix(FundamentalMatrix, K)
+    #     F = F_RANSAC(points1.T, points2.T, 0.005, 500)
+    #     FundamentalMatrix = T2.T @ F @ T1
+    #     E = compute_essential_matrix(FundamentalMatrix, K)
+    #     rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
 
-    rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2)
-    OutputMatrix = np.concatenate((rotation,translation),axis = 1)
+    #     cumulative_translation = cumulative_translation + translation
+    #     # print("cumulative_translation :\n",cumulative_translation)
+    #     cumulative_orientation = cumulative_orientation @ rotation
+    #     # print("cumulative_orientation :\n",cumulative_orientation)
 
-    np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
-    print(OutputMatrix)
-    print(np.reshape(OutputMatrix,(1,12)))   
+
+    #     OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
+    #     # print("Reshaped Output: \n",np.reshape(OutputMatrix,(1,12)))
+    #     np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
+
+    
+
+    # img1 = cv2.imread('../mr19-assignment2-data/images/000000.png')
+    # img2 = cv2.imread('../mr19-assignment2-data/images/000001.png')
+
+    # kp1, kp2 = correspondingFeatureDetection(img1, img2)
+    # T1 = NormalizationMat(kp1[0:9,:])
+    # T2 = NormalizationMat(kp2[0:9,:])
+
+    # points1 = T1 @ kp1.T
+    # points2 = T2 @ kp2.T
+
+
+    # F = F_RANSAC(points1.T, points2.T, 0.005, 500)
+
+    # FundamentalMatrix = T2.T @ F @ T1
+
+    # E = compute_essential_matrix(FundamentalMatrix, K)
+
+    # rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
+    # OutputMatrix = np.concatenate((rotation,translation),axis = 1)
+
+    # np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
 
