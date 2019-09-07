@@ -23,7 +23,7 @@ def correspondingFeatureDetection(img1, img2):
     kp2_list = np.mat([])
     k = 0
 
-    number_of_matches = 100
+    number_of_matches = 150
 
     for m in matches:
         img1Idx = m.queryIdx
@@ -149,8 +149,8 @@ if __name__ == "__main__":
     for i in range(len(dirFiles)):
         dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
 
-    key_point_1 = np.zeros((800,100,3))
-    key_point_2 = np.zeros((800,100,3))
+    key_point_1 = np.zeros((800,150,3))
+    key_point_2 = np.zeros((800,150,3))
 
     for i in range(1,400):
         print("Iteration {}".format(i))
@@ -201,8 +201,21 @@ if __name__ == "__main__":
         E = compute_essential_matrix(FundamentalMatrix, K)
 
         
+        
         rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2, K_inverse)
-        Ptemp = P2
+        # print(translation.shape)
+        PReal = cv2.recoverPose(E, (kp1[:,0:2]), (kp2[:,0:2]), K)
+        
+
+
+        RTrans = K_inverse @ P2
+        rotation = RTrans[:,0:3].T 
+        RTrans = RTrans[:,0:3].T @ RTrans
+
+        translation = np.array([RTrans[:,3]])
+        # print(translation.shape)
+        # print(translation.T)
+        # print(rotation.shape)
 
         if i != 1:
 
@@ -223,19 +236,15 @@ if __name__ == "__main__":
         else:
             r = 1
 
+        Ptemp = P2
 
+        # Transformation = np.concatenate((np.concatenate((rotation, r*translation), axis = 1),np.array([[0, 0, 0, 1]])), axis = 0)
 
-
-
-
-        cumulative_translation =  cumulative_translation + ((translation)) #/ np.linalg.norm(translation))
-        # print("cumulative_translation :\n",cumulative_translation)
-        cumulative_orientation = cumulative_orientation @ rotation
-        # print("cumulative_orientation :\n",cumulative_orientation)
-        Transformation = np.concatenate((np.concatenate((rotation, r*translation), axis = 1),np.array([[0, 0, 0, 1]])), axis = 0)
+        Transformation = np.concatenate((rotation, r*(translation.T)), axis = 1)
+        Transformation = np.concatenate((Transformation, np.array([[0, 0, 0, 1]])), axis = 0)
         C = C @ Transformation
 
-        OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
+        # OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
         print("C : ", C)
         Reshaped = np.reshape(C[0:3,:],(1,12))
         # print("Reshaped Output: \n",np.reshape(OutputMatrix,(1,12)))
