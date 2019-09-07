@@ -1,12 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-import time
 from decompose_essential_matrix import *
 import os
+from data import *
 
 
 def correspondingFeatureDetection(img1, img2):
+    '''
+        img1        : Image 1
+        img2        : Image 2
+        return      : Matched Keypoints from the 1st and 2nd image
+    '''
 
     orb = cv2.ORB_create()
     Keypoints1, Descriptors1 = orb.detectAndCompute(img1, None)
@@ -42,8 +47,6 @@ def correspondingFeatureDetection(img1, img2):
             k+=1
         if k == number_of_matches:
             break
-
-
     return kp1_list,kp2_list
 
 def F_matrix(image_coords_1, image_coords_2):
@@ -123,83 +126,126 @@ def NormalizationMat(image_coords):
         ])
     
     return T
+
+
+
+
+def algebraic_triangulation(x1, x2, P1, P2):
+    '''
+        x1      : N*3 image coordinates of the 1st image
+        x2      : N*3 image coordinates of the 2st image
+        P1      : Projection matrix of the 1st image
+        P2      : Projection matrix of the 2nd image
+        return  : N*4 Triangulated world point
+    '''
+
+    X = np.zeros((len(x1),4))
+
+    for i in range(len(x1)):
+        J = np.zeros((4,4))
+        J[:,0] = x1[i,0] * P1[2,:] - P1[0,:]
+        J[:,1] = x1[i,1] * P1[2,:] - P1[1,:]
+        J[:,2] = x2[i,0] * P2[2,:] - P2[0,:]
+        J[:,3] = x2[i,1] * P2[2,:] - P2[1,:]
+
+        u, s, vh = np.linalg.svd(J, full_matrices=False)
+        X[i,:] = vh[3,:]
+        X[i,:] = X[i,:] / X[i,3]
+    
+    return X
     
 
+def decompose_essential_matrix(E, K, img_points1, img_points2, K_inverse):
+    '''
+        E           : 3*3 Essential Matrix
+        K           : 3*3 Camera Calibration Matrix
+        img_points1 : N*3 Image Coordinates of the 1st image
+        img_points2 : N*3 Image Coordinates of the 2nd image
+        K_inverse   : 3*3 Inverse of Camera Calibration Matrix
+        return      : 3*3 Rotation and 3*1 Translation Parameters
+    '''
 
-if __name__ == "__main__":    
-    ground_truth = np.loadtxt('../mr19-assignment2-data/ground-truth.txt')
-    ground_truth_translation = np.concatenate((np.concatenate((np.array([ground_truth[:,3]]).T, np.array([ground_truth[:,7]]).T), axis=1), np.array([ground_truth[:,11]]).T ), axis=1)
-    for i in range(800, 0, -1):
-        print("{} - {}".format(i, i-1))
-        ground_truth_translation[i] = ground_truth_translation[i] - ground_truth_translation[i-1]
-    ground_truth_norm = np.linalg.norm(ground_truth_translation, axis=1)
+    R1, R2, T = cv2.decomposeEssentialMat(E)
 
-    C = np.concatenate((np.eye(3), np.zeros((3,1))), axis = 1) 
-    C = np.concatenate((C, np.array([[0, 0, 0, 1]])), axis = 0)
+    P =  K @ np.concatenate((np.eye(3),np.zeros((3,1))),axis = 1)
+    P1 = K @ np.concatenate((R1,T),axis=1)
+    P2 = K @ np.concatenate((R1,-T),axis=1)
+    P3 = K @ np.concatenate((R2,T),axis=1)
+    P4 = K @ np.concatenate((R2,-T),axis=1)
 
-    K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
+    X_P1 = algebraic_triangulation(img_points1, img_points2, P, P1)
+    X_P2 = algebraic_triangulation(img_points1, img_points2, P, P2)
+    X_P3 = algebraic_triangulation(img_points1, img_points2, P, P3)
+    X_P4 = algebraic_triangulation(img_points1, img_points2, P, P4)
+
 
     
-    f = open('results.txt','wb')
-    K_inverse = np.linalg.inv(K)
+    # Computing Image Coordinates for all the Triangulated Points in Image 1 and Image 2
+    x1_1 = K_inverse @ P @ X_P1.T
+    x2_1 = K_inverse @P1 @ X_P1.T
 
-    cumulative_translation = np.zeros((3,1))
-    cumulative_orientation = np.eye(3)
-    initial_matrix = np.concatenate((cumulative_translation, cumulative_orientation), axis=1)
-    np.savetxt(f,np.reshape(initial_matrix, (1,12)))
+    x1_2 =K_inverse @ P @ X_P2.T
+    x2_2 =K_inverse @ P2 @ X_P2.T
 
-    dirFiles = os.listdir('../mr19-assignment2-data/images/')
-    for i in range(len(dirFiles)):
-        dirFiles[i] = dirFiles[i].split(".")[0]
+    x1_3 = K_inverse @ P @ X_P3.T
+    x2_3 = K_inverse @ P3 @ X_P3.T
 
-    dirFiles.sort(key=float)
-    for i in range(len(dirFiles)):
-        dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
+    x1_4 = K_inverse @ P @ X_P4.T
+    x2_4 = K_inverse @ P4 @ X_P4.T
 
-    key_point_1 = np.zeros((800,150,3))
-    key_point_2 = np.zeros((800,150,3))
+    # Computing the depth of all the reprojected image points
+    d1_1 =  x1_1[2,:]
+    d2_1 =  x2_1[2,:]
+    score_1 = (d1_1 > 0) & (d2_1 > 0)
+    score_1 = np.sum(score_1)
 
-    for i in range(1,len(dirFiles)):
-        print("Iteration {}".format(i))
-        img1 = cv2.imread(dirFiles[i-1])
-        img2 = cv2.imread(dirFiles[i])
+    d1_2 =  x1_2[2,:]
+    d2_2 =  x2_2[2,:]
+    score_2 = (d1_2 > 0) & (d2_2 > 0)
+    score_2 = np.sum(score_2)
 
-        kp1, kp2 = correspondingFeatureDetection(img1, img2)
-        key_point_1[i-1] = kp1
-        key_point_2[i-1] = kp2
+    d1_3 =  x1_3[2,:]
+    d2_3 =  x2_3[2,:]
+    score_3 = (d1_3 > 0) & (d2_3 > 0)
+    score_3 = np.sum(score_3)
+
+    d1_4 =  x1_4[2,:]
+    d2_4 =  x2_4[2,:]
+    score_4 = (d1_4 > 0) & (d2_4 > 0)
+    score_4 = np.sum(score_4)
+
+    # Selecting the Projection Matrix that gives the maximum number of reconstructed points in front of the camera
+    index = np.argmax(np.array([score_1, score_2, score_3, score_4]))
+    rotation = np.mat([])
+    translation = np.mat([])
+    if index == 0:
+        rotation = R1
+        translation = T
+        Pactual = P1
+    elif index == 1:
+        rotation = R1
+        translation = -T
+        Pactual = P2
+    elif index == 2:
+        rotation = R2
+        translation = T
+        Pactual = P3        
+    elif index == 3:
+        rotation = R2
+        translation = -T
+        Pactual = P4
+
+    return rotation, translation 
 
 
 
-    for i in range(1, len(dirFiles)):
-        print("Iteration {}".format(i))
-
-
-        kp1 = key_point_1[i-1]
-        kp2 = key_point_2[i-1]
-        if i > 1:
-            kpPrev = key_point_2[i - 2]
-
-        T1 = NormalizationMat(kp1)
-        T2 = NormalizationMat(kp2)
-
-        points1 = T1 @ kp1.T
-        points2 = T2 @ kp2.T
-
-        F = F_RANSAC(points1.T, points2.T, 0.005, 300)
-        FundamentalMatrix = T2.T @ F @ T1
-        E = compute_essential_matrix(FundamentalMatrix, K)
-        
-        
-        Transformation_info = cv2.recoverPose(E, (kp1[:,0:2]), (kp2[:,0:2]), K)
-        Rotation = Transformation_info[1].T
-        Translation = -Transformation_info[2]
-        Translation = Translation / np.linalg.norm(Translation) * ground_truth_norm[i]
-        print("Translation: ",Translation)
-
-        Transformation = np.concatenate((Rotation, Translation), axis = 1)
-        Transformation = np.concatenate((Transformation, np.array([[0, 0, 0, 1]])), axis = 0)
-        C = C @ Transformation
-
-        print("C : ", C)
-        Reshaped = np.reshape(C[0:3,:],(1,12))
-        np.savetxt(f, Reshaped)
+def compute_essential_matrix(F, K):
+    '''
+        F       : 3*3 Fundamental Matrix
+        K       : 3*3 Camera Calibration Matrix
+        return  : 3*3 Essential Matrix
+    '''
+    E = K.T @ F @ K
+    u, s, vh = np.linalg.svd(E, full_matrices=True)
+    E = u @ np.diag(np.array([1,1,0])) @ vh
+    return E
