@@ -69,6 +69,7 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
     rotation = r1
     translation = t
     Pactual = P1
+    r = np.sqrt(np.sum((Points3dP1[0,:] - Points3dP1[1,:])**2))
     
 
     numPointsInfrontOfCam = calculatePointsInfrontOfCam(P, P2, Points3dP2)
@@ -77,7 +78,7 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
         rotation = r1
         translation = -t
         Pactual = P2
-    
+        r = np.sqrt(np.sum((Points3dP2[0,:] - Points3dP2[1,:])**2))
 
     numPointsInfrontOfCam = calculatePointsInfrontOfCam(P, P3, Points3dP3)
 
@@ -85,6 +86,7 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
         rotation = r2
         translation = t
         Pactual = P3
+        r = np.sqrt(np.sum((Points3dP3[0,:] - Points3dP3[1,:])**2))
     
 
     numPointsInfrontOfCam = calculatePointsInfrontOfCam(P, P4, Points3dP4)
@@ -93,9 +95,9 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
         rotation = r2
         translation = -t
         Pactual = P4
-        
-            
-    return rotation, translation
+        r = np.sqrt(np.sum((Points3dP4[0,:] - Points3dP4[1,:])**2))
+
+    return rotation, translation, r
 
 
 
