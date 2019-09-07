@@ -10,11 +10,10 @@ def correspondingFeatureDetection(img1, img2):
 
     orb = cv2.ORB_create()
     Keypoints1, Descriptors1 = orb.detectAndCompute(img1, None)
-    # Keypoints1, Descriptors1 = orb.compute(img1,Keypoints1)
-    # print(Keypoints1)
     Keypoints2, Descriptors2 = orb.detectAndCompute(img2, None)
     
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
     # Match descriptors.
     matches = bf.match(Descriptors1,Descriptors2)
 
@@ -31,7 +30,7 @@ def correspondingFeatureDetection(img1, img2):
 
         (img1x, img1y) = Keypoints1[img1Idx].pt
         (img2x, img2y) = Keypoints2[img2Idx].pt
-        # print([img1x,img1y,1])
+
         if k == 0:
             kp1_list = [[img1x,img1y,1]]
             kp2_list = [[img2x,img2y,1]]
@@ -43,8 +42,7 @@ def correspondingFeatureDetection(img1, img2):
     # Draw first 10 matches.
     img3 = cv2.drawMatches(img1,Keypoints1,img2,Keypoints2,matches[:30],None, flags=2)
 
-    # plt.imshow(img3),plt.show()
-    return kp1_list,kp2_list#Keypoints1, Descriptors1, Keypoints2, Descriptors2, matches
+    return kp1_list,kp2_list
 
 def F_matrix(image_coords_1, image_coords_2):
     '''
@@ -127,75 +125,49 @@ def NormalizationMat(image_coords):
 
 
 if __name__ == "__main__":
-    print(cv2.decomposeEssentialMat)
     
-    # K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
-
-    
-    # f = open('results.txt','wb')
-
-    # cumulative_translation = np.zeros((3,1))
-    # cumulative_orientation = np.eye(3)
-    # initial_matrix = np.concatenate((cumulative_translation, cumulative_orientation), axis=1)
-    # np.savetxt(f,np.reshape(initial_matrix, (1,12)))
-
-    # dirFiles = os.listdir('../mr19-assignment2-data/images/')
-    # for i in range(len(dirFiles)):
-    #     dirFiles[i] = dirFiles[i].split(".")[0]
-
-    # dirFiles.sort(key=float)
-    # for i in range(len(dirFiles)):
-    #     dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
-
-
-    # for i in range(1,len(dirFiles)):
-    #     print("Iteration {}".format(i))
-    #     img1 = cv2.imread(dirFiles[i-1])
-    #     img2 = cv2.imread(dirFiles[i])
-
-    #     kp1, kp2 = correspondingFeatureDetection(img1, img2)
-    #     T1 = NormalizationMat(kp1[0:9,:])
-    #     T2 = NormalizationMat(kp2[0:9,:])
-
-    #     points1 = T1 @ kp1.T
-    #     points2 = T2 @ kp2.T
-
-    #     F = F_RANSAC(points1.T, points2.T, 0.005, 500)
-    #     FundamentalMatrix = T2.T @ F @ T1
-    #     E = compute_essential_matrix(FundamentalMatrix, K)
-    #     rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
-
-    #     cumulative_translation = cumulative_translation + translation
-    #     # print("cumulative_translation :\n",cumulative_translation)
-    #     cumulative_orientation = cumulative_orientation @ rotation
-    #     # print("cumulative_orientation :\n",cumulative_orientation)
-
-
-    #     OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
-    #     # print("Reshaped Output: \n",np.reshape(OutputMatrix,(1,12)))
-    #     np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
+    K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
 
     
+    f = open('results.txt','wb')
 
-    # img1 = cv2.imread('../mr19-assignment2-data/images/000000.png')
-    # img2 = cv2.imread('../mr19-assignment2-data/images/000001.png')
+    cumulative_translation = np.zeros((3,1))
+    cumulative_orientation = np.eye(3)
+    initial_matrix = np.concatenate((cumulative_translation, cumulative_orientation), axis=1)
+    np.savetxt(f,np.reshape(initial_matrix, (1,12)))
 
-    # kp1, kp2 = correspondingFeatureDetection(img1, img2)
-    # T1 = NormalizationMat(kp1[0:9,:])
-    # T2 = NormalizationMat(kp2[0:9,:])
+    dirFiles = os.listdir('../mr19-assignment2-data/images/')
+    for i in range(len(dirFiles)):
+        dirFiles[i] = dirFiles[i].split(".")[0]
 
-    # points1 = T1 @ kp1.T
-    # points2 = T2 @ kp2.T
+    dirFiles.sort(key=float)
+    for i in range(len(dirFiles)):
+        dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
 
 
-    # F = F_RANSAC(points1.T, points2.T, 0.005, 500)
+    for i in range(1,len(dirFiles)):
+        print("Iteration {}".format(i))
+        img1 = cv2.imread(dirFiles[i-1])
+        img2 = cv2.imread(dirFiles[i])
 
-    # FundamentalMatrix = T2.T @ F @ T1
+        kp1, kp2 = correspondingFeatureDetection(img1, img2)
+        T1 = NormalizationMat(kp1[0:9,:])
+        T2 = NormalizationMat(kp2[0:9,:])
 
-    # E = compute_essential_matrix(FundamentalMatrix, K)
+        points1 = T1 @ kp1.T
+        points2 = T2 @ kp2.T
 
-    # rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
-    # OutputMatrix = np.concatenate((rotation,translation),axis = 1)
+        F = F_RANSAC(points1.T, points2.T, 0.005, 500)
+        FundamentalMatrix = T2.T @ F @ T1
+        E = compute_essential_matrix(FundamentalMatrix, K)
+        rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
 
-    # np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
+        cumulative_translation = cumulative_translation + translation
+        print("cumulative_translation :\n",cumulative_translation)
+        cumulative_orientation = cumulative_orientation @ rotation
+        print("cumulative_orientation :\n",cumulative_orientation)
 
+
+        OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
+        print("Reshaped Output: \n",np.reshape(OutputMatrix,(1,12)))
+        np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
