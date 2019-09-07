@@ -35,7 +35,7 @@ def calculatePointsInfrontOfCam(P,P2, points3D):
 
     
 
-def decompose_essential_matrix(E, K, img_points1, img_points2):
+def decompose_essential_matrix(E, K, img_points1, img_points2, K_inverse):
 
     # w = np.array([
     #     [ 0, -1, 0],
@@ -72,18 +72,20 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
     X_P3 = algebraic_triangulation(img_points1, img_points2, P, P3)
     X_P4 = algebraic_triangulation(img_points1, img_points2, P, P4)
 
+
+    
     # Computing Image Coordinates for all the Triangulated Points in Image 1 and Image 2
-    x1_1 = P @ X_P1.T
-    x2_1 = P1 @ X_P1.T
+    x1_1 = K_inverse @ P @ X_P1.T
+    x2_1 = K_inverse @P1 @ X_P1.T
 
-    x1_2 = P @ X_P2.T
-    x2_2 = P2 @ X_P2.T
+    x1_2 =K_inverse @ P @ X_P2.T
+    x2_2 =K_inverse @ P2 @ X_P2.T
 
-    x1_3 = P @ X_P3.T
-    x2_3 = P3 @ X_P3.T
+    x1_3 = K_inverse @ P @ X_P3.T
+    x2_3 = K_inverse @ P3 @ X_P3.T
 
-    x1_4 = P @ X_P4.T
-    x2_4 = P4 @ X_P4.T
+    x1_4 = K_inverse @ P @ X_P4.T
+    x2_4 = K_inverse @ P4 @ X_P4.T
 
     # Computing the depth of all the reprojected image points
     d1_1 =  x1_1[2,:]
@@ -112,15 +114,19 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
     if index == 0:
         rotation = R1
         translation = T
+        Pactual = P1
     elif index == 1:
         rotation = R1
         translation = -T
+        Pactual = P2
     elif index == 2:
         rotation = R2
         translation = T
+        Pactual = P3        
     elif index == 3:
         rotation = R2
         translation = -T
+        Pactual = P4
 
 
 
@@ -164,7 +170,7 @@ def decompose_essential_matrix(E, K, img_points1, img_points2):
 
     # return rotation, translation, r
     
-    return rotation, translation
+    return rotation, translation, P, Pactual 
 
 
 

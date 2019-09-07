@@ -23,7 +23,7 @@ def correspondingFeatureDetection(img1, img2):
     kp2_list = np.mat([])
     k = 0
 
-    number_of_matches = 150
+    number_of_matches = 100
 
     for m in matches:
         img1Idx = m.queryIdx
@@ -134,6 +134,7 @@ if __name__ == "__main__":
 
     
     f = open('results.txt','wb')
+    K_inverse = np.linalg.inv(K)
 
     cumulative_translation = np.zeros((3,1))
     cumulative_orientation = np.eye(3)
@@ -148,10 +149,10 @@ if __name__ == "__main__":
     for i in range(len(dirFiles)):
         dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
 
-    key_point_1 = np.zeros((800,150,3))
-    key_point_2 = np.zeros((800,150,3))
+    key_point_1 = np.zeros((800,100,3))
+    key_point_2 = np.zeros((800,100,3))
 
-    for i in range(1,401):
+    for i in range(1,400):
         print("Iteration {}".format(i))
         img1 = cv2.imread(dirFiles[i-1])
         img2 = cv2.imread(dirFiles[i])
@@ -160,42 +161,78 @@ if __name__ == "__main__":
         key_point_1[i-1] = kp1
         key_point_2[i-1] = kp2
 
+
+
     for i in range(1,400):
         print("Iteration {}".format(i))
 
         kp1 = key_point_1[i-1]
         kp2 = key_point_2[i-1]
+        kpPrev = key_point_2[i - 2]
 
+        p = 0
+        MatchIndex = np.array([],dtype = 'int')
+        if i != 1:
+            for i in range(kpPrev.shape[0]):
+                for j in range(kp1.shape[0]):
+                    if np.sum(np.abs(kpPrev[i,:] - kp1[j,:])) < 0.0001:
+                        p = p + 1
+                        MatchIndex = np.append(MatchIndex,(np.array([int(j), int(i)])))
 
-        Kptemp = kp1
+                    if p == 2: 
+                        break    
+
+                if p == 2:
+                    break
+
+            
+            # print(MatchIndex)
+            MatchedPoints = np.array([[kp1[MatchIndex[0],:], kpPrev[MatchIndex[1],:],1], [kp1[MatchIndex[2],:], kpPrev[MatchIndex[3],:],1] ])
+            # print(MatchedPoints)
+
         T1 = NormalizationMat(kp1)
         T2 = NormalizationMat(kp2)
 
         points1 = T1 @ kp1.T
         points2 = T2 @ kp2.T
 
-        F = F_RANSAC(points1.T, points2.T, 0.005, 500)
+        F = F_RANSAC(points1.T, points2.T, 0.005, 300)
         FundamentalMatrix = T2.T @ F @ T1
         E = compute_essential_matrix(FundamentalMatrix, K)
 
-        # rotation, translation, r = decompose_essential_matrix(E, K, kp1, kp2)
+        
+        rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2, K_inverse)
+        Ptemp = P2
 
-        # if i == 1:
-        #     rnew = 1
-        #     r2 = r
-        # else:
-        #     rnew = r2 / r
-        #     r2 = r
+        if i != 1:
+
+            # print(kp1[MatchIndex[0]])
+            Image1_pt = np.array([kp1[MatchIndex[0],:],kp1[MatchIndex[2],:]])
+            ImagePrev_pt = np.array([kpPrev[MatchIndex[1],:],kpPrev[MatchIndex[3],:]])
+
+            Image2_pt_current = np.array([kp2[MatchIndex[0],:],kp2[MatchIndex[1],:]])
+            X_img_prev = algebraic_triangulation(Image1_pt,ImagePrev_pt, P, Ptemp)
+            # X2_img_current = algebraic_triangulation(kp1[MatchIndex[2],:],kpPrev[MatchIndex[3],:], P, P2)
+
+            X_img_current = algebraic_triangulation(Image1_pt,Image2_pt_current, P, P2)
+            # X2_img_prev = algebraic_triangulation(kp1[MatchIndex[2],:],kpPrev[MatchIndex[3],:], Ptemp, P)
+
+            r = np.sqrt(np.sum((X_img_prev[0] - X_img_prev[1])**2)) / np.sqrt(np.sum((X_img_current[0] - X_img_current[1])**2))
+            
+
+        else:
+            r = 1
 
 
-        rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
+
+
 
 
         cumulative_translation =  cumulative_translation + ((translation)) #/ np.linalg.norm(translation))
         # print("cumulative_translation :\n",cumulative_translation)
         cumulative_orientation = cumulative_orientation @ rotation
         # print("cumulative_orientation :\n",cumulative_orientation)
-        Transformation = np.concatenate((np.concatenate((rotation, translation), axis = 1),np.array([[0, 0, 0, 1]])), axis = 0)
+        Transformation = np.concatenate((np.concatenate((rotation, r*translation), axis = 1),np.array([[0, 0, 0, 1]])), axis = 0)
         C = C @ Transformation
 
         OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
