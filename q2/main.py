@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # Reading images and extracting out the keypoints from the images and computing the matches in the consecutive image
     key_point_1 = np.zeros((800,150,3))
     key_point_2 = np.zeros((800,150,3))
-    print("Extracting Keypoints and Descriptors ... ", end='   ')
+    print("Extracting Keypoints and Descriptors ... ")
     for i in range(1,len(dirFiles)):
         img1 = cv2.imread(dirFiles[i-1])
         img2 = cv2.imread(dirFiles[i])

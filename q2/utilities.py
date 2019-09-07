@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from decompose_essential_matrix import *
 import os
-from data import *
 
 
 def correspondingFeatureDetection(img1, img2):
