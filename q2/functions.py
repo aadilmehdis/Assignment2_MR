@@ -152,7 +152,7 @@ if __name__ == "__main__":
     key_point_1 = np.zeros((800,100,3))
     key_point_2 = np.zeros((800,100,3))
 
-    for i in range(1,400):
+    for i in range(1,50):
         print("Iteration {}".format(i))
         img1 = cv2.imread(dirFiles[i-1])
         img2 = cv2.imread(dirFiles[i])
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
 
 
-    for i in range(1,400):
+    for i in range(1,50):
         print("Iteration {}".format(i))
 
         kp1 = key_point_1[i-1]
@@ -200,8 +200,11 @@ if __name__ == "__main__":
         FundamentalMatrix = T2.T @ F @ T1
         E = compute_essential_matrix(FundamentalMatrix, K)
 
+        P = cv2.recoverPose(E, kp1[:,0:2], kp2[:,0:2], K)
+        print(P)
+
         
-        rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2, K_inverse)
+        # rotation, translation, P, P2 = decompose_essential_matrix(E, K, kp1, kp2, K_inverse)
         Ptemp = P2
 
         if i != 1:
