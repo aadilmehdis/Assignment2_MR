@@ -3,3 +3,5 @@ Pipfile
 *.pyc
 .ipynb_checkpoints
 mr19-assignment2-data/*
+results.txt
+gtruth.txt

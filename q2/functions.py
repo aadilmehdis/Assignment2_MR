@@ -23,8 +23,9 @@ def correspondingFeatureDetection(img1, img2):
     kp2_list = np.mat([])
     k = 0
 
-    for m in matches:
+    number_of_matches = 150
 
+    for m in matches:
         img1Idx = m.queryIdx
         img2Idx = m.trainIdx
 
@@ -38,9 +39,10 @@ def correspondingFeatureDetection(img1, img2):
         else:
             kp1_list = np.append(kp1_list,[[img1x,img1y,1]],axis = 0)
             kp2_list = np.append(kp2_list,[[img2x,img2y,1]],axis = 0)
-        
-    # Draw first 10 matches.
-    img3 = cv2.drawMatches(img1,Keypoints1,img2,Keypoints2,matches[:30],None, flags=2)
+            k+=1
+        if k == number_of_matches:
+            break
+
 
     return kp1_list,kp2_list
 
@@ -124,8 +126,10 @@ def NormalizationMat(image_coords):
     
 
 
-if __name__ == "__main__":
-    
+if __name__ == "__main__":    
+    C = np.concatenate((np.eye(3), np.zeros((3,1))), axis = 1) 
+    C = np.concatenate((C, np.array([[0, 0, 0, 1]])), axis = 0)
+
     K  = np.array([[7.215377e+02, 0.000000e+00, 6.095593e+02],[0.000000e+00, 7.215377e+02, 1.728540e+02],[0.000000e+00, 0.000000e+00, 1.000000e+00]])
 
     
@@ -144,15 +148,28 @@ if __name__ == "__main__":
     for i in range(len(dirFiles)):
         dirFiles[i] = '../mr19-assignment2-data/images/' + dirFiles[i] + '.png'
 
+    key_point_1 = np.zeros((800,150,3))
+    key_point_2 = np.zeros((800,150,3))
 
-    for i in range(1,len(dirFiles)):
+    for i in range(1,401):
         print("Iteration {}".format(i))
         img1 = cv2.imread(dirFiles[i-1])
         img2 = cv2.imread(dirFiles[i])
 
         kp1, kp2 = correspondingFeatureDetection(img1, img2)
-        T1 = NormalizationMat(kp1[0:9,:])
-        T2 = NormalizationMat(kp2[0:9,:])
+        key_point_1[i-1] = kp1
+        key_point_2[i-1] = kp2
+
+    for i in range(1,400):
+        print("Iteration {}".format(i))
+
+        kp1 = key_point_1[i-1]
+        kp2 = key_point_2[i-1]
+
+
+        Kptemp = kp1
+        T1 = NormalizationMat(kp1)
+        T2 = NormalizationMat(kp2)
 
         points1 = T1 @ kp1.T
         points2 = T2 @ kp2.T
@@ -160,14 +177,29 @@ if __name__ == "__main__":
         F = F_RANSAC(points1.T, points2.T, 0.005, 500)
         FundamentalMatrix = T2.T @ F @ T1
         E = compute_essential_matrix(FundamentalMatrix, K)
+
+        # rotation, translation, r = decompose_essential_matrix(E, K, kp1, kp2)
+
+        # if i == 1:
+        #     rnew = 1
+        #     r2 = r
+        # else:
+        #     rnew = r2 / r
+        #     r2 = r
+
+
         rotation, translation = decompose_essential_matrix(E, K, kp1, kp2)
 
-        cumulative_translation = cumulative_translation + translation
-        print("cumulative_translation :\n",cumulative_translation)
-        cumulative_orientation = cumulative_orientation @ rotation
-        print("cumulative_orientation :\n",cumulative_orientation)
 
+        cumulative_translation =  cumulative_translation + ((translation)) #/ np.linalg.norm(translation))
+        # print("cumulative_translation :\n",cumulative_translation)
+        cumulative_orientation = cumulative_orientation @ rotation
+        # print("cumulative_orientation :\n",cumulative_orientation)
+        Transformation = np.concatenate((np.concatenate((rotation, translation), axis = 1),np.array([[0, 0, 0, 1]])), axis = 0)
+        C = C @ Transformation
 
         OutputMatrix = np.concatenate((cumulative_orientation,cumulative_translation),axis = 1)
-        print("Reshaped Output: \n",np.reshape(OutputMatrix,(1,12)))
-        np.savetxt(f, np.reshape(OutputMatrix,(1,12)))
+        print("C : ", C)
+        Reshaped = np.reshape(C[0:3,:],(1,12))
+        # print("Reshaped Output: \n",np.reshape(OutputMatrix,(1,12)))
+        np.savetxt(f, Reshaped)
